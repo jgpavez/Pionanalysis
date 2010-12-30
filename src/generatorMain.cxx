@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	gROOT->SetStyle("Plain");
 	TApplication *rootapp = new TApplication("TNtuple generation",&argc,argv);
 	TNtuple_generator *gen = new TNtuple_generator();
-	gen->save_ntuple();
+	gen->Transverse_momentum_broadening();
 	rootapp->Run();
 	return 0;
 }

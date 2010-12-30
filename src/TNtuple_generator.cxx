@@ -15,11 +15,13 @@
 #include "TCanvas.h"
 #include <iostream>
 #include <fstream>
+#include <cstdio>
 #include "TChain.h"
 #include "TProfile.h"
+#include <cmath>
 #endif
 
-TNtuple_generator::TNtuple_generator(): f_location("/home/utfsm/jgpavez/DATA/"), fd_ext("_data.root"), fs_ext("_simuls.root"), f_save("/home/utfsm/jgpavez/pionanalysis/DATA/data_corr.root"), fQ2_min(1.), fQ2_max(4.), fN_Q2(12), fNU_min(2.2), fNU_max(4.2), fN_NU(9), fZH_min(0.4), fZH_max(0.7), fN_ZH(3),fPT2_max(4.),
+TNtuple_generator::TNtuple_generator(): f_location("/home/utfsm/jgpavez/Pionanalysis/DATA/"), fd_ext("_data.root"), fs_ext("_simuls.root"), f_save("/home/utfsm/jgpavez/Pionanalysis/DATA/data_corr.root"), fQ2_min(1.), fQ2_max(4.), fN_Q2(12), fNU_min(2.2), fNU_max(4.2), fN_NU(9), fZH_min(0.4), fZH_max(0.7), fN_ZH(3),fPT2_max(4.),
 fPT2_min(0.),fN_PT2(20), fPHI_PQ_max(180.), fPHI_PQ_min(-180.), fN_PHI_PQ(36)
 {
 
@@ -104,13 +106,13 @@ void TNtuple_generator::Save_ntuple()
       			    	Phi_pq_cut = Form("phi_pq>%f && phi_pq<%f",fPHI_PQ_min+ii*delta_phi_pq,fPHI_PQ_min+(ii+1)*delta_phi_pq);
       			    	ntuple->Draw((const char*)Form("Pt2_pi_plus>>htmp_data(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),Phi_pq_cut,"goff");
       			    	TH1F *htmp_data = (TH1F*)gDirectory->GetList()->FindObject("htmp_data");
-      			    	htmp_data->Sumw2();
+      			    //	htmp_data->Sumw2();
       			    	accept->Draw((const char*)Form("Pt2_pi_plus>>htmp_acc(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),Phi_pq_cut,"goff");
       			    	TH1F *htmp_acc = (TH1F*)gDirectory->GetList()->FindObject("htmp_acc");
-      			    	htmp_acc->Sumw2();
+      			    //	htmp_acc->Sumw2();
       			    	thrown->Draw((const char*)Form("Pt2_pi_plus>>htmp_thr(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),Phi_pq_cut,"goff");
       			    	TH1F *htmp_thr = (TH1F*)gDirectory->GetList()->FindObject("htmp_thr");
-      			    	htmp_thr->Sumw2();
+      			    //	htmp_thr->Sumw2();
 
       					for (Int_t kk=1; kk<=htmp_data->GetXaxis()->GetNbins(); kk++) {
       						if (metal == 0) target_data = 2.0;
@@ -171,27 +173,44 @@ void TNtuple_generator::MakeCorrection()
 	correctData = NULL;
 }
 
-Double_t TNtuple_generator::Transverse_momentum_broadening()
+void TNtuple_generator::Transverse_momentum_broadening()
 {
 	// Tranverse momentum broadening computation
 	// use data from acceptance_correction.root generated
 	// by MakeCorrection
 
 	TFile *data = new TFile(f_location + "acceptance_correction.root");
+	TFile *resized = new TFile(f_location + "resized_hist.root");
+	TFile *broad = new TFile(f_location + "broadening.root","RECREATE");
 	TNtuple *data_ntuple = (TNtuple *)data->Get("corrected_data");
+	TNtuple *broadening_t = new TNtuple("broadening","broadening calculated","broadening");
+	Double_t meanD2,meanC;
+	Float_t broadening;
+	TProfile *resizedQ2 = (TProfile *)resized->Get("resizeQ2");
+	TProfile *resizedNu = (TProfile *)resized->Get("resizeNu");
+	TProfile *resizedZh = (TProfile *)resized->Get("resizeZh");
 	TCut pt2Cut;
-	Double_t meanD2,meanC,broadening;
-	Float_t delta_pt2 = (fPT2_max - fPT2_min)/fN_PT2;
-	data_ntuple->Draw("n_data:PT2>>htmpc","target_data = 2","profile");
-	TProfile *histC = (TProfile *)gDirectory->Get("htmpc");
-	data_ntuple->Draw(Form("n_data:PT2>>htmpd2(%f,%f,%f)",fN_PT2,fPT2_min,fPT2_max),"target_data = 2","prof");
-	TProfile *histD2 = (TProfile *)gDirectory->Get("htmpd2");
-	gDirectory->Get("htmpc")->Sumw2();
-	gDirectory->Get("htmpd2")->Sumw2();
-	meanC = (Double_t)gDirectory->Get("htmpc")->GetMean();
-	meanD2 = (Double_t)gDirectory->Get("htmpd2")->GetMean();
-	broadening = (pow(meanC)) - (pow(meanD2));
-	return broadening;
+	for ( Int_t i = 0; i < 3; i++){
+		for ( Int_t k = 0; k < 4; k++){
+			for ( Int_t j = 0; j < 3; j++){
+				TCut cutc = Form("target_data == 2 && (Q2 >= %f) && (Q2 <= %f) && (NU >= %f) && (NU <= %f) && (Zh >= %f) && (Zh <= %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
+				TCut cutd2 = Form("target_data == 1 && (Q2 >= %f) && (Q2 <= %f) && (NU >= %f) && (NU <= %f) && (Zh >= %f) && (Zh <= %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
+				data_ntuple->Draw(Form("n_data:Pt2>>htmpc(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cutc,"profilegoff");
+				data_ntuple->Draw(Form("n_data:Pt2>>htmpd2(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cutd2,"profilegoff");
+				((TProfile*)gDirectory->Get("htmpc"))->Sumw2();
+				((TProfile*)gDirectory->Get("htmpd2"))->Sumw2();
+				meanC = ((TProfile*)gDirectory->Get("htmpc"))->GetMean();
+				meanD2 = ((TProfile*)gDirectory->Get("htmpd2"))->GetMean();
+				broadening = (pow(meanC,2)) - (pow(meanD2,2));
+				broadening_t->Fill(broadening);
+
+			}
+		}
+	}
+	broad->cd();
+	broadening_t->Write();
+	broad->Close(); delete broad;
+	data->Close();  delete data;
 }
 
 void TNtuple_generator::ResizeHist()
@@ -203,14 +222,16 @@ void TNtuple_generator::ResizeHist()
 	TFile *data = new TFile(f_location + "acceptance_correction.root");
 	TFile *resize = new TFile(f_location + "resized_hist.root","RECREATE");
 
-	TNtuple *tuple = (TNtuple *)data->Get("data_ntuple");
-	tuple->Draw(Form("n_data:Q2>>profQ2(%f,%f,%f)",fN_Q2,fQ2_min,fQ2_max),"","prof");
-	gDirectory->Get("profQ2")->Rebin(4,"resizeQ2");
+	TNtuple *tuple = (TNtuple *)data->Get("corrected_data");
+	tuple->Draw(Form("n_data:Q2>>profQ2(%d,%f,%f)",fN_Q2,fQ2_min,fQ2_max),"","profilegoff");
+	TProfile* beforeresProfileQ2 = (TProfile*)gDirectory->Get("profQ2");
+	beforeresProfileQ2->Rebin(4,"resizeQ2");
 	TProfile *resizeProfileQ2 = (TProfile *)gDirectory->Get("resizeQ2");
-	tuple->Draw(Form("n_data:NU>>profNu(%f,%f,%f)",fN_NU,fNU_min,fNU_max),"","prof");
-	gDirectory->Get("profNu")->Rebin(3,"resizeNu");
+	tuple->Draw(Form("n_data:NU>>profNu(%d,%f,%f)",fN_NU,fNU_min,fNU_max),"","profilegoff");
+	TProfile* beforeresProfileNu = (TProfile*)gDirectory->Get("profNu");
+	beforeresProfileNu->Rebin(3,"resizeNu");
 	TProfile *resizeProfileNu = (TProfile *)gDirectory->Get("resizeNu");
-	tuple->Draw(Form("n_data:Zh>>profZh(%f,%f,%f)",fN_ZH,fZH_min,fZH_max),"","prof");
+	tuple->Draw(Form("n_data:Zh>>resizeZh(%d,%f,%f)",fN_ZH,fZH_min,fZH_max),"","profilegoff");
 	TProfile *resizeProfileZh = (TProfile *)gDirectory->Get("resizeZh");
 
 	resize->cd();

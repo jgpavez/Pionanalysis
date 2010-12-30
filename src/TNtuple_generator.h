@@ -27,9 +27,9 @@ private:
 	const Int_t fN_Q2;  			// Number of Q2 bins : 12
 	const Double_t fNU_min; 		// low limit of the Nu bin : 2.2
 	const Double_t fNU_max; 		// high limit of the Nu bin : 4.2
-	const Int_t fN_NU; 				// Number of Nu bins : 9
-	const Double_t fZH_max; 		// low limit of the Zh bin : 0.4
-	const Double_t fZH_min; 		// high limit of the Zh bin : 0.7
+	const Int_t fN_NU; 				// Number of Nu bins : 9		// low limit of the Zh bin : 0.4
+	const Double_t fZH_min;
+	const Double_t fZH_max; 		// high limit of the Zh bin : 0.7
 	const Int_t fN_ZH; 				// Number of Zh bins: 3
 	const Double_t fPT2_max; 		// low limit of the theta bin (in respect to the virtual photon) : -0
 	const Double_t fPT2_min; 		// high limit of the theta bin (in respect to the virtual photon) : 4
@@ -44,7 +44,7 @@ public:
 	void Read();
 	void Save_ntuple();
 	Int_t Return_index(Int_t, Int_t, Int_t, Int_t,Int_t) const;
-	Double_t Transverse_momentum_broadening();
+	void Transverse_momentum_broadening();
 	void MakeCorrection();
 	void ResizeHist();
 
