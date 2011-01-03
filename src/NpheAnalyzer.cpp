@@ -55,6 +55,7 @@ void somePlots(){
 #endif
 
 	TClasTool *input = new TClasTool();
+	TFile *histfile = new TFile("/home/utfsm/jgpavez/Pionanalysis/DATA/pionhist.root","recreate");
 	input->InitDSTReader("ROOTDSTR");
 	input->AddFile("/home/utfsm/jgpavez/Pionanalysis/DATA/clas_42066_22.pass2.root");
 	Double_t nPhe;
@@ -76,6 +77,9 @@ void somePlots(){
 					}
 				}
 	}
+	histfile->cd();
+	hist->Write();
+	histfile->Close();delete histfile; histfile = NULL;
 	delete ident; ident = NULL;
 	delete input; input = NULL;
 

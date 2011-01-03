@@ -190,18 +190,21 @@ void TNtuple_generator::Transverse_momentum_broadening()
 	TProfile *resizedNu = (TProfile *)resized->Get("resizeNu");
 	TProfile *resizedZh = (TProfile *)resized->Get("resizeZh");
 	TCut pt2Cut;
-	for ( Int_t i = 0; i < 3; i++){
-		for ( Int_t k = 0; k < 4; k++){
-			for ( Int_t j = 0; j < 3; j++){
-				TCut cutc = Form("target_data == 2 && (Q2 >= %f) && (Q2 <= %f) && (NU >= %f) && (NU <= %f) && (Zh >= %f) && (Zh <= %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
-				TCut cutd2 = Form("target_data == 1 && (Q2 >= %f) && (Q2 <= %f) && (NU >= %f) && (NU <= %f) && (Zh >= %f) && (Zh <= %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
+	for ( Int_t i = 1; i <= 3; i++){
+		for ( Int_t k = 1; k <= 3; k++){
+			for ( Int_t j = 1; j <= 3; j++){
+				TCut cutc = Form("target_data == 2.0 && (Q2 > %f) && (Q2 < %f) && (NU > %f) && (NU < %f) && (Zh > %f) && (Zh < %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
+				TCut cutd2 = Form("target_data == 1.0 && (Q2 > %f) && (Q2 < %f) && (NU > %f) && (NU < %f) && (Zh > %f) && (Zh < %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
 				data_ntuple->Draw(Form("n_data:Pt2>>htmpc(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cutc,"profilegoff");
 				data_ntuple->Draw(Form("n_data:Pt2>>htmpd2(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cutd2,"profilegoff");
+				std::cout<<cutc<<std::endl;
+				std::cout<<cutd2<<std::endl;
 				((TProfile*)gDirectory->Get("htmpc"))->Sumw2();
 				((TProfile*)gDirectory->Get("htmpd2"))->Sumw2();
 				meanC = ((TProfile*)gDirectory->Get("htmpc"))->GetMean();
 				meanD2 = ((TProfile*)gDirectory->Get("htmpd2"))->GetMean();
 				broadening = (pow(meanC,2)) - (pow(meanD2,2));
+				std::cout<<broadening<<std::endl;
 				broadening_t->Fill(broadening);
 
 			}
