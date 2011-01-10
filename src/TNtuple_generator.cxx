@@ -21,8 +21,11 @@
 #include <cmath>
 #endif
 
-TNtuple_generator::TNtuple_generator(): f_location("/home/utfsm/jgpavez/Pionanalysis/DATA/"), fd_ext("_data.root"), fs_ext("_simuls.root"), f_save("/home/utfsm/jgpavez/Pionanalysis/DATA/data_corr.root"), fQ2_min(1.), fQ2_max(4.), fN_Q2(12), fNU_min(2.2), fNU_max(4.2), fN_NU(9), fZH_min(0.4), fZH_max(0.7), fN_ZH(3),fPT2_max(4.),
-fPT2_min(0.),fN_PT2(20), fPHI_PQ_max(180.), fPHI_PQ_min(-180.), fN_PHI_PQ(36)
+TNtuple_generator::TNtuple_generator(): f_location("/home/jgpave/Pionanalysis/DATA/"), fd_ext("_data.root"), fs_ext("_simuls.root"),
+										f_save("/home/utfsm/jgpavez/Pionanalysis/DATA/data_corr.root"),
+										fQ2_min(1.), fQ2_max(4.), fN_Q2(12), fNU_min(2.2), fNU_max(4.2),
+										fN_NU(9), fZH_min(0.4), fZH_max(0.7), fN_ZH(3),fPT2_max(4.),
+										fPT2_min(0.),fN_PT2(20), fPHI_PQ_max(180.), fPHI_PQ_min(-180.), fN_PHI_PQ(36)
 {
 
 }
@@ -144,9 +147,12 @@ void TNtuple_generator::MakeCorrection()
 
 	TFile *data = new TFile(f_save);
 	TFile *correctData = new TFile(f_location + "acceptance_correction.root","RECREATE");
+
 	TNtuple *tuple = (TNtuple *)data->Get("data_ntuple");
 	TNtuple *correctionTuple = new TNtuple("corrected_data","acceptance correction applied to data","target_data:Q2:NU:Zh:Pth:Pt2:n_data");
+
 	Float_t q2,nu,zh,phi,pt2,n_acc,n_thr,n_data,correction,target_data;
+
 	tuple->SetBranchAddress("target_data",&target_data);
 	tuple->SetBranchAddress("Q2",&q2);
 	tuple->SetBranchAddress("NU",&nu);
@@ -163,14 +169,13 @@ void TNtuple_generator::MakeCorrection()
 		correction = (n_data*n_thr)/n_acc;
 		correctionTuple->Fill(target_data,q2,nu,zh,phi,pt2,correction);
 		}
-	data->Close();
+
 	correctData->cd();
 	correctionTuple->Write();
 	correctData->Close();
-	delete correctData;
-	delete data;
-	data = NULL;
-	correctData = NULL;
+	data->Close();
+	delete correctData,correctData = NULL;
+	delete data, data = NULL;
 }
 
 void TNtuple_generator::Transverse_momentum_broadening()
@@ -180,33 +185,40 @@ void TNtuple_generator::Transverse_momentum_broadening()
 	// by MakeCorrection
 
 	TFile *data = new TFile(f_location + "acceptance_correction.root");
-	TFile *resized = new TFile(f_location + "resized_hist.root");
-	TFile *broad = new TFile(f_location + "broadening.root","RECREATE");
+	TFile *broad = new TFile(f_location + "broadening2.root","RECREATE");
 	TNtuple *data_ntuple = (TNtuple *)data->Get("corrected_data");
-	TNtuple *broadening_t = new TNtuple("broadening","broadening calculated","broadening");
+	TNtuple *broadening_t = new TNtuple("broadening","broadening calculated","broadening:Q2:NU:ZH");
+
 	Double_t meanD2,meanC;
-	Float_t broadening;
-	TProfile *resizedQ2 = (TProfile *)resized->Get("resizeQ2");
-	TProfile *resizedNu = (TProfile *)resized->Get("resizeNu");
-	TProfile *resizedZh = (TProfile *)resized->Get("resizeZh");
+	Double_t broadening;
 	TCut pt2Cut;
-	for ( Int_t i = 1; i <= 3; i++){
-		for ( Int_t k = 1; k <= 3; k++){
-			for ( Int_t j = 1; j <= 3; j++){
-				TCut cutc = Form("target_data == 2.0 && (Q2 > %f) && (Q2 < %f) && (NU > %f) && (NU < %f) && (Zh > %f) && (Zh < %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
-				TCut cutd2 = Form("target_data == 1.0 && (Q2 > %f) && (Q2 < %f) && (NU > %f) && (NU < %f) && (Zh > %f) && (Zh < %f)",resizedQ2->GetBinLowEdge(i),resizedQ2->GetBinLowEdge(i) + resizedQ2->GetBinWidth(i),resizedNu->GetBinLowEdge(k) ,resizedNu->GetBinLowEdge(k) + resizedNu->GetBinWidth(k) ,resizedZh->GetBinLowEdge(j) ,resizedZh->GetBinLowEdge(j) + resizedZh->GetBinWidth(j));
+	TH1D *proycx,*proydx;
+	Double_t delta_q2,delta_nu,delta_zh;
+	delta_q2 = (fQ2_max-fQ2_min)/3;
+	delta_nu = (fNU_max-fNU_min)/3;
+	delta_zh = (fZH_max-fZH_min)/3;
+
+	for ( Int_t i = 0; i < 3; i++){
+		for ( Int_t k = 0; k < 3; k++){
+			for ( Int_t j = 0; j < 3; j++){
+				TCut cutc = Form("target_data == 2.0 && (Q2 > %f) && (Q2 < %f) && (NU > %f) && (NU < %f) && (Zh > %f) && (Zh < %f)",
+									fQ2_min+i*delta_q2,fQ2_min+(i+1)*delta_q2,fNU_min+k*delta_nu,fNU_min+(k+1)*delta_nu,fZH_min+j*delta_zh ,fZH_min+(j+1)*delta_zh);
+				TCut cutd2 = Form("target_data == 1.0 && (Q2 > %f) && (Q2 < %f) && (NU > %f) && (NU < %f) && (Zh > %f) && (Zh < %f)",
+									fQ2_min+i*delta_q2,fQ2_min+(i+1)*delta_q2,fNU_min+k*delta_nu,fNU_min+(k+1)*delta_nu,fZH_min+j*delta_zh ,fZH_min+(j+1)*delta_zh);
+
 				data_ntuple->Draw(Form("n_data:Pt2>>htmpc(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cutc,"profilegoff");
 				data_ntuple->Draw(Form("n_data:Pt2>>htmpd2(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cutd2,"profilegoff");
-				std::cout<<cutc<<std::endl;
-				std::cout<<cutd2<<std::endl;
-				((TProfile*)gDirectory->Get("htmpc"))->Sumw2();
-				((TProfile*)gDirectory->Get("htmpd2"))->Sumw2();
-				meanC = ((TProfile*)gDirectory->Get("htmpc"))->GetMean();
-				meanD2 = ((TProfile*)gDirectory->Get("htmpd2"))->GetMean();
-				broadening = (pow(meanC,2)) - (pow(meanD2,2));
-				std::cout<<broadening<<std::endl;
-				broadening_t->Fill(broadening);
 
+				proycx = (TH1D*)((TProfile*)gDirectory->Get("htmpc"))->ProjectionX("htmpcp");
+				proydx = (TH1D*)((TProfile*)gDirectory->Get("htmpd2"))->ProjectionX("htmpd2p");
+
+				meanC = proycx->GetMean();
+				meanD2 = proydx->GetMean();
+				broadening = meanC - meanD2;
+
+				broadening_t->Fill(broadening,i+1,k+1,j+1);
+				delete gDirectory->Get("htmpcp");
+				delete gDirectory->Get("htmpd2p");
 			}
 		}
 	}
@@ -215,36 +227,4 @@ void TNtuple_generator::Transverse_momentum_broadening()
 	broad->Close(); delete broad;
 	data->Close();  delete data;
 }
-
-void TNtuple_generator::ResizeHist()
-{
-	// Bin resizing for values in acceptance_correction.root
-	// This recalculate bins, and generate histograms for Q2,NU,Zh
-	// also save its in resized_hist.root
-
-	TFile *data = new TFile(f_location + "acceptance_correction.root");
-	TFile *resize = new TFile(f_location + "resized_hist.root","RECREATE");
-
-	TNtuple *tuple = (TNtuple *)data->Get("corrected_data");
-	tuple->Draw(Form("n_data:Q2>>profQ2(%d,%f,%f)",fN_Q2,fQ2_min,fQ2_max),"","profilegoff");
-	TProfile* beforeresProfileQ2 = (TProfile*)gDirectory->Get("profQ2");
-	beforeresProfileQ2->Rebin(4,"resizeQ2");
-	TProfile *resizeProfileQ2 = (TProfile *)gDirectory->Get("resizeQ2");
-	tuple->Draw(Form("n_data:NU>>profNu(%d,%f,%f)",fN_NU,fNU_min,fNU_max),"","profilegoff");
-	TProfile* beforeresProfileNu = (TProfile*)gDirectory->Get("profNu");
-	beforeresProfileNu->Rebin(3,"resizeNu");
-	TProfile *resizeProfileNu = (TProfile *)gDirectory->Get("resizeNu");
-	tuple->Draw(Form("n_data:Zh>>resizeZh(%d,%f,%f)",fN_ZH,fZH_min,fZH_max),"","profilegoff");
-	TProfile *resizeProfileZh = (TProfile *)gDirectory->Get("resizeZh");
-
-	resize->cd();
-	resizeProfileQ2->Write();
-	resizeProfileNu->Write();
-	resizeProfileZh->Write();
-	resize->Close();
-	delete resize; resize = NULL;
-	data->Close();
-	delete data; data = NULL;
-}
-
 //_____________________________________________________________________________________________________________

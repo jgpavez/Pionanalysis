@@ -38,15 +38,15 @@ private:
 	const Double_t fPHI_PQ_min;	  	// high limit of the phi bin (in respect to the virtual photon) : 180
 	const Int_t fN_PHI_PQ; 			// Number of phi bins (in respect to the virtual photon) : 36
 
+	void Read();
+
 public:
 
 	TNtuple_generator();
-	void Read();
 	void Save_ntuple();
-	Int_t Return_index(Int_t, Int_t, Int_t, Int_t,Int_t) const;
 	void Transverse_momentum_broadening();
 	void MakeCorrection();
-	void ResizeHist();
+	Int_t Return_index(Int_t, Int_t, Int_t, Int_t,Int_t) const;
 
 };
 inline Int_t TNtuple_generator::Return_index(Int_t i1, Int_t i2, Int_t i3, Int_t i4, Int_t i5) const
@@ -54,4 +54,5 @@ inline Int_t TNtuple_generator::Return_index(Int_t i1, Int_t i2, Int_t i3, Int_t
 		// Inline function to calculate index of RC_CONSTS map
 		return (i1+1) + (i2+1)*10 + (i3+1)*100 + (i4+1)*10000 + i5*1000000;
 	}
+
 #endif  //__NTUPLE_GENERATOR__

@@ -12,7 +12,7 @@
 #include "TProfile.h"
 #include "TROOT.h"
 #endif
-//#include "Analyser/analysis_lib/include/massConst.h"
+
 void calculateNPhe()
 {
 #ifdef __CINT__
@@ -67,7 +67,8 @@ void somePlots(){
 	for ( Int_t k = 0; k < nEntries; k++ ){
 		input->Next();
 				Int_t nRows = input->GetNRows("EVNT");
-				if ( (ident->GetCategorization(0) == "electron") && ((ident->Q2() > 1.) && (ident->W() > 2.) && (ident->Yb() < 0.85)) && (ident->FidCheckCut() == 1)){
+				if ( (ident->GetCategorization(0) == "electron") && ((ident->Q2() > 1.) && (ident->W() > 2.)
+						&& (ident->Yb() < 0.85)) && (ident->FidCheckCut() == 1)){
 					for ( Int_t i = 0; i < nRows; i++ ){
 						if ( (ident->GetCategorization(i) == "low energy pion +") && (ident->FidCheckCutPiPlus(i) == 1)){
 							correction = ident->TimeCorr4(0.13957018,i);
@@ -80,6 +81,7 @@ void somePlots(){
 	histfile->cd();
 	hist->Write();
 	histfile->Close();delete histfile; histfile = NULL;
+
 	delete ident; ident = NULL;
 	delete input; input = NULL;
 
