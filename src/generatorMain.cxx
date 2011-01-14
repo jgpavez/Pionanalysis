@@ -30,6 +30,10 @@ int main(int argc, char **argv)
 		break;
 		case(3):gen->Transverse_momentum_broadening();
 		break;
+		case(4):gen->calculateBins();
+		break;
+		case(5):gen->createPhiPlots();
+		break;
 		}
 //	rootapp->Run();
 	delete rootapp;

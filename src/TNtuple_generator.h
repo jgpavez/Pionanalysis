@@ -46,6 +46,8 @@ public:
 	void Save_ntuple();
 	void Transverse_momentum_broadening();
 	void MakeCorrection();
+	void calculateBins();
+	void createPhiPlots();
 	Int_t Return_index(Int_t, Int_t, Int_t, Int_t,Int_t) const;
 
 };

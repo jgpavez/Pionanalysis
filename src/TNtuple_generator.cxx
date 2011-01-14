@@ -227,4 +227,83 @@ void TNtuple_generator::Transverse_momentum_broadening()
 	broad->Close(); delete broad;
 	data->Close();  delete data;
 }
+
+void TNtuple_generator::calculateBins(){
+	TFile *acceptance = new TFile(f_location + "acceptance_correction.root");
+	TNtuple *old_ntuple = (TNtuple *)acceptance->Get("corrected_data");
+	TFile *dataxb = new TFile(f_location + "dataxb.root","RECREATE");
+	TNtuple *new_ntuple = new TNtuple("ntuple","ntuple","Q2:NU:Zh:Pt2:X:Phi:n_data");
+
+	const Double_t delta_q2 = (fQ2_max-fQ2_min)/fN_Q2;
+  	const Double_t delta_nu = (fNU_max-fNU_min)/fN_NU;
+  	const Double_t delta_Zh = (fZH_max-fZH_min)/fN_ZH;
+  	const Double_t delta_phi = (fPHI_PQ_max-fPHI_PQ_min)/fN_PHI_PQ;
+  	Float_t xb;
+	for ( int i = 0; i < fN_Q2; i++){
+		for ( int j = 0; j < fN_NU; j++){
+			for ( int k = 0; k < fN_ZH; k++){
+				for ( int p = 0; p < fN_PHI_PQ; p++){
+					const Double_t Q2_min = fQ2_min+i*delta_q2;
+					const Double_t Nu_min = fNU_min+j*delta_nu;
+					const Double_t Zh_min = fZH_min+k*delta_Zh;
+					const Double_t Phi_min = fPHI_PQ_min + p*delta_phi;
+					TCut cut1 = Form("Q2 > %f && Q2 < %f && NU > %f && NU < %f && Zh > %f && Zh < %f && Pth > %f && Pth < %f",
+							Q2_min, Q2_min+(delta_q2),Nu_min, Nu_min+(delta_nu),Zh_min, Zh_min+(delta_Zh),Phi_min, Phi_min+(delta_phi));
+					xb = (Q2_min+(delta_q2/2))/(2*(Nu_min+(delta_nu/2))*0.938272013);
+					old_ntuple->Draw(Form("n_data:Pt2>>pt2hist(%d,%f,%f)",fN_PT2,fPT2_min,fPT2_max),cut1,"profilegoff");
+					TH1D* proycx = (TH1D*)((TProfile*)gDirectory->Get("pt2hist"))->ProjectionX("htmpcp");
+
+					for ( int pt = 1; pt <= 5; pt++){
+						new_ntuple->Fill(Q2_min+(delta_q2/2),Nu_min+(delta_nu/2),Zh_min+(delta_Zh/2),proycx->GetBinCenter(pt),xb,Phi_min+(delta_phi/2),proycx->GetBinContent(pt));
+					}
+					delete proycx;
+					delete gDirectory->Get("pt2hist");
+				}
+			}
+		}
+	}
+	dataxb->cd();
+	new_ntuple->Write();
+	dataxb->Close();
+	acceptance->Close();
+	delete acceptance;
+	delete dataxb;
+}
+
+void TNtuple_generator::createPhiPlots(){
+	TFile *dataxb = new TFile(f_location + "dataxb.root");
+	TNtuple *tuple = (TNtuple *)dataxb->Get("ntuple");
+	TFile *phi_hists = new TFile(f_location + "phi_hists.root","RECREATE");
+	phi_hists->cd();
+	const Double_t XB_MIN = (fQ2_min/(2*fNU_min*0.938272013));
+	const Double_t XB_MAX = (fQ2_max/(2*fNU_max*0.938272013));
+	const Double_t delta_q2 = (fQ2_max-fQ2_min)/4;
+  	const Double_t delta_xb = (XB_MAX - XB_MIN)/3;
+  	const Double_t delta_Zh = (fZH_max-fZH_min)/fN_ZH;
+  	const Double_t delta_pt2 = (fPT2_max - fPT2_min)/5;
+	for ( int i = 0; i < 4; i++){
+		for ( int j = 0; j < 3; j++){
+			for ( int k = 0; k < fN_ZH; k++){
+				for ( int p = 0; p < 5; p++){
+					const Double_t Q2_min = fQ2_min+i*delta_q2;
+					const Double_t Xb_min = XB_MIN+j*delta_xb;
+					const Double_t Zh_min = fZH_min+k*delta_Zh;
+					const Double_t Pt2_min = fPT2_min + p*delta_pt2;
+					TCut cut1 = Form("Q2 > %f && Q2 < %f && X > %f && X < %f && Zh > %f && Zh < %f && Pt2 > %f && Pt2 < %f",
+							Q2_min, Q2_min+(delta_q2),Xb_min, Xb_min+(delta_xb),Zh_min, Zh_min+(delta_Zh),Pt2_min, Pt2_min+(delta_pt2));
+					tuple->Draw(Form("n_data:Phi>>pt2hist_%d_%d_%d_%d(%d,%f,%f)",i,j,k,p,12,fPHI_PQ_min,fPHI_PQ_max),cut1,"goffprofile");
+					TH1D* proycx = (TH1D*)((TProfile*)gDirectory->Get(Form("pt2hist_%d_%d_%d_%d",i,j,k,p)))->ProjectionX(Form("htmpcp_%d_%d_%d_%d",i,j,k,p));
+					proycx->Write();
+					delete proycx;
+					delete gDirectory->Get(Form("pt2hist_%d_%d_%d_%d",i,j,k,p));
+				}
+			}
+		}
+	}
+
+	dataxb->Close();
+	phi_hists->Close();
+	delete phi_hists;
+	delete dataxb;
+}
 //_____________________________________________________________________________________________________________
