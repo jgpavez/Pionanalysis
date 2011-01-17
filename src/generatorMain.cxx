@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	TApplication *rootapp = new TApplication("TNtuple generation",&argc,argv);
 	TNtuple_generator *gen = new TNtuple_generator();
 	switch (atoi(argv[1])){
-		case(1):gen->Transverse_momentum_broadening();
+		case(1):gen->Save_ntuple();
 		break;
 		case(2):gen->MakeCorrection();
 		break;
