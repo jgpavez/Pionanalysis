@@ -18,6 +18,8 @@ int main(int argc, char **argv)
 		std::cout<<"1) save_ntuple"<<std::endl;
 		std::cout<<"2) make_correction"<<std::endl;
 		std::cout<<"3) calculate tranverse_momentum_broadening"<<std::endl;
+		std::cout<<"4) recalculate bins"<<std::endl;
+
 		return 0;
 	}
 	gROOT->SetStyle("Plain");
@@ -30,9 +32,7 @@ int main(int argc, char **argv)
 		break;
 		case(3):gen->Transverse_momentum_broadening();
 		break;
-		case(4):gen->calculateBins();
-		break;
-		case(5):gen->createPhiPlots();
+		case(4):gen->RecalculateBins();
 		break;
 		}
 //	rootapp->Run();
